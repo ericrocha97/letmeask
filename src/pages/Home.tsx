@@ -1,31 +1,46 @@
-import { useHistory } from "react-router-dom"
-
-import { FiLogIn } from "react-icons/fi"
-
-import { Button } from '../components/Button'
-import { useAuth } from "../hooks/useAuth"
+import { useHistory } from 'react-router-dom'
 
 import illustrationImg from '../assets/images/illustration.svg'
-import logoImg from '../assets/images/logo-dark.svg'
-import googleIconImg from '../assets/images/google-icon-dark.svg'
+import logoImg from '../assets/images/logo-dark.svg';
+import googleIconImg from '../assets/images/google-icon-dark.svg';
 
+import { Button } from '../components/Button';
+import { useAuth } from '../hooks/useAuth';
 
-import '../styles/auth.scss'
+import '../styles/auth.scss';
+import { FormEvent, useState } from 'react';
+import { database } from '../services/firebase';
 
 export function Home() {
   const history = useHistory();
-  const { user,signInWithGoogle } = useAuth();
-  
-  function handleCreateRoom() {
-    if(!user) {
-      signInWithGoogle()
+  const { user, signInWithGoogle } = useAuth()
+  const [roomCode, setRoomCode] = useState('');
+
+  async function handleCreateRoom() {
+    if (!user) {
+      await signInWithGoogle()
     }
-    history.push('/rooms/new')
+
+    history.push('/rooms/new');
   }
 
+  async function handleJoinRoom(event: FormEvent) {
+    event.preventDefault();
+    if(roomCode.trim() === '') {
+      return;
+    }
 
-  return(
-    <div id='page-auth'>
+    const roomRef = await database.ref(`rooms/${roomCode}`).get();
+
+    if(!roomRef.exists()) {
+      alert('Room does not exists.');
+      return;
+    }
+    history.push(`/rooms/${roomCode}`)
+  }
+
+  return (
+    <div id="page-auth">
       <aside>
         <img src={illustrationImg} alt="Ilustração simbolizando perguntas e respostas" />
         <strong>Crie salas de Q&amp;A ao-vivo</strong>
@@ -34,18 +49,20 @@ export function Home() {
       <main>
         <div className="main-content">
           <img src={logoImg} alt="Letmeask" />
-          <button className='create-room' onClick={handleCreateRoom}>
+          <button onClick={handleCreateRoom} className="create-room">
             <img src={googleIconImg} alt="Logo do Google" />
             Crie sua sala com o Google
           </button>
           <div className="separator">ou entre em uma sala</div>
-          <form>
+          <form onSubmit={handleJoinRoom}>
             <input 
-              type="text" 
+              type="text"
               placeholder="Digite o código da sala"
+              onChange={event => setRoomCode(event.target.value)}
+              value={roomCode}
             />
             <Button type="submit">
-              <FiLogIn /> Entrar na sala
+              Entrar na sala
             </Button>
           </form>
         </div>
